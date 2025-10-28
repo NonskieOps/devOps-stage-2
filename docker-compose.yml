@@ -1,27 +1,63 @@
-# docker-compose.yml
 version: '3.8'
 
 services:
   app_blue:
     image: ${BLUE_IMAGE}
     ports:
-      - "8081:8080"
+      - "8081:3000"  # Host 8081 -> Container 3000 (Node default)
     environment:
       - RELEASE_ID=${RELEASE_ID_BLUE}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s  # Give Node.js time to boot
 
   app_green:
     image: ${GREEN_IMAGE}
     ports:
-      - "8082:8080"
+      - "8082:3000"  # Host 8082 -> Container 3000
     environment:
       - RELEASE_ID=${RELEASE_ID_GREEN}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  wait-deps:  # Init container: Wait for apps before Nginx
+    image: alpine:latest
+    depends_on:
+      app_blue:
+        condition: service_healthy
+      app_green:
+        condition: service_healthy
+    command: >
+      sh -c "
+      apk add --no-cache curl
+      until curl -f http://app_blue:3000/healthz; do echo 'Waiting for Blue...'; sleep 2; done
+      until curl -f http://app_green:3000/healthz; do echo 'Waiting for Green...'; sleep 2; done
+      echo 'Apps ready!'
+      "
+    profiles:
+      - tools  # Run only on explicit start (docker compose --profile tools up wait-deps)
 
   nginx:
     image: nginx:alpine
     ports:
       - "${PORT:-8080}:80"
     volumes:
-      - ./nginx.conf:/etc/mginx/nginx.conf:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
-      - app_blue
-      - app_green
+      app_blue:
+        condition: service_healthy
+      app_green:
+        condition: service_healthy
+      wait-deps:
+        condition: service_completed_successfully
+    profiles:
+      - exclude  # Wait for init before starting
+
+# Default profile excludes wait-deps; start with: docker compose up -d (apps + nginx only, health ensures order)

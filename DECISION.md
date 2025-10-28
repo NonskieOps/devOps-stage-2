@@ -14,3 +14,8 @@
 - **No Sticky Sessions**: Not needed (identical apps, no session state).
 - **Simple Script**: Bash+sed over Python for zero deps in CI.
 - **Fixed Timeouts**: Tuned for task; adjustable if apps need longer.
+
+## Updates for v2
+- Ports: 3000 internal (Node standard) → Maps to 8081/8082 host.
+- Health: /healthz checks + depends_on healthy → No timeouts.
+- Wait: Init container pings apps → Nginx starts only when ready.
