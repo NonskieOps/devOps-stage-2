@@ -1,10 +1,11 @@
 # README.md
+
 # Blue/Green Deployment with Nginx Auto-Failover
 
 ## Setup
-1. Copy `.env.example` to `.env` ...
-2. Run `./generate-nginx.sh`
-3. Start: `docker compose up -d` # Health checks ensure apps ready before Nginx
+1. Copy `.env.example` to `.env`...
+2. `./generate-nginx.sh`
+3. `docker compose up -d`  # Health checks ensure apps ready before Nginx
 
 ## Endpoints
 - **Nginx**: `http://localhost:${PORT:-8080}` (main entrypoint).

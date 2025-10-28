@@ -1,3 +1,5 @@
+
+# nginx.conf.template
 events {
   worker_connections 1024;
 }
